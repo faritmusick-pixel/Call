@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aló Web - Llamadas por 10 Dígitos</title>
+    <!-- Librería PeerJS oficial -->
+    <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
+        body { background-color: #0b0f19; color: #f8fafc; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 15px; }
+        
+        .phone-card { 
+            background: linear-gradient(145deg, #1e293b, #0f172a); 
+            padding: 24px; 
+            border-radius: 28px; 
+            box-shadow: 0 20px 40px rgba(0,0,0,0.6); 
+            width: 100%; 
+            max-width: 360px; 
+            text-align: center; 
+            border: 1px solid #334155;
+        }
+
+        .header-title { color: #38bdf8; font-size: 22px; font-weight: 800; margin-bottom: 2px; }
+        .header-sub { font-size: 11px; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 14px; font-weight: 600; }
+
+        .wifi-badge { 
+            background: rgba(56, 189, 248, 0.1); 
+            border: 1px dashed #0284c7; 
+            color: #38bdf8; 
+            padding: 6px 10px; 
+            border-radius: 10px; 
+            font-size: 11px; 
+            margin-bottom: 14px; 
+            font-weight: 600; 
+        }
+
+        .my-id-container { 
+            background: #090d16; 
+            padding: 12px; 
+            border-radius: 12px; 
+            margin-bottom: 16px; 
+            border: 1px solid #1e293b; 
+            text-align: center;
+        }
+        .my-id-label { font-size: 10px; color: #64748b; text-transform: uppercase; font-weight: 700; margin-bottom: 4px; }
+        .my-id-value { font-size: 16px; font-weight: 800; color: #34d399; font-family: monospace; letter-spacing: 1px; word-break: break-all; }
+
+        .display-screen {
+            background: #020617;
+            border-radius: 16px;
+            padding: 12px;
+            margin-bottom: 16px;
+            border: 1px solid #1e293b;
+        }
+
+        .number-input-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .number-display {
+            width: 100%;
+            background: transparent;
+            border: none;
+            color: #ffffff;
+            font-size: 18px;
+            font-weight: 700;
+            text-align: center;
+            outline: none;
+            letter-spacing: 1px;
+        }
+        .number-display::placeholder { color: #475569; font-size: 13px; }
+
+        .btn-backspace {
+            background: transparent;
+            border: none;
+            color: #64748b;
+            font-size: 18px;
+            cursor: pointer;
+            padding: 4px 8px;
+        }
+
+        .keypad {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .key-btn {
+            background: #1e293b;
+            color: #f8fafc;
+            border: 1px solid #334155;
+            border-radius: 50%;
+            width: 55px;
+            height: 55px;
+            margin: 0 auto;
+            font-size: 18px;
+            font-weight: 700;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .key-btn:active { transform: scale(0.9); background: #38bdf8; color: #0f172a; }
+
+        .actions-row {
+            display: flex;
+            justify-content: center;
+            gap: 25px;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .call-action-btn {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            border: none;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+            -webkit-tap-highlight-color: transparent;
+            transition: transform 0.15s ease;
+        }
+        .call-action-btn:active { transform: scale(0.92); }
+
+        .btn-start-call { background: linear-gradient(135deg, #10b981, #059669); color: white; }
+        .btn-end-call { background: linear-gradient(135deg, #ef4444, #dc2626); color: white; }
+
+        .call-icon { width: 26px; height: 26px; fill: currentColor; }
+
+        .status-box {
+            margin-top: 15px;
+            font-size: 12px;
+            color: #94a3b8;
+            background: #090d16;
+            padding: 8px;
+            border-radius: 10px;
+            border: 1px solid #1e293b;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+
+<div class="phone-card">
+    <div class="header-title">Aló Web</div>
+    <div class="header-sub">Llamadas Directas Wi-Fi</div>
+
+    <div class="wifi-badge">📶 Línea Activa en App</div>
+
+    <div class="my-id-container">
+        <div class="my-id-label">Tu Número de 10 Dígitos:</div>
+        <div class="my-id-value" id="my-id-display">Conectando...</div>
+    </div>
+
+    <div class="display-screen">
+        <div class="number-input-row">
+            <input type="text" class="number-display" id="number-display" placeholder="Digita 10 dígitos" readonly>
+            <button class="btn-backspace" id="btn-backspace">⌫</button>
+        </div>
+    </div>
+
+    <div class="keypad">
+        <button class="key-btn" onclick="pressKey('1')">1</button>
+        <button class="key-btn" onclick="pressKey('2')">2</button>
+        <button class="key-btn" onclick="pressKey('3')">3</button>
+        <button class="key-btn" onclick="pressKey('4')">4</button>
+        <button class="key-btn" onclick="pressKey('5')">5</button>
+        <button class="key-btn" onclick="pressKey('6')">6</button>
+        <button class="key-btn" onclick="pressKey('7')">7</button>
+        <button class="key-btn" onclick="pressKey('8')">8</button>
+        <button class="key-btn" onclick="pressKey('9')">9</button>
+        <button class="key-btn" style="visibility: hidden;"></button>
+        <button class="key-btn" onclick="pressKey('0')">0</button>
+        <button class="key-btn" style="visibility: hidden;"></button>
+    </div>
+
+    <div class="actions-row">
+        <button class="call-action-btn btn-start-call" id="btn-call" title="Llamar">
+            <svg class="call-icon" viewBox="0 0 24 24">
+                <path d="M6.62 10.79a15.053 15.053 0 006.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/>
+            </svg>
+        </button>
+
+        <button class="call-action-btn btn-end-call" id="btn-hang" title="Colgar">
+            <svg class="call-icon" viewBox="0 0 24 24" style="transform: rotate(135deg);">
+                <path d="M6.62 10.79a15.053 15.053 0 006.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/>
+            </svg>
+        </button>
+    </div>
+
+    <div class="status-box" id="status-text">Iniciando línea...</div>
+</div>
+
+<audio id="remote-audio" autoplay></audio>
+
+<script>
+    function generar10Digitos() {
+        let res = '';
+        for (let i = 0; i < 10; i++) {
+            res += Math.floor(Math.random() * 10);
+        }
+        return res;
+    }
+
+    let miNumero10 = localStorage.getItem('mi_numero_10_alo');
+    if (!miNumero10) {
+        miNumero10 = generar10Digitos();
+        localStorage.setItem('mi_numero_10_alo', miNumero10);
+    }
+
+    const peer = new Peer(miNumero10, {
+        config: {
+            'iceServers': [
+                { urls: 'stun:stun.l.google.com:19302' },
+                { urls: 'stun:stun1.l.google.com:19302' }
+            ]
+        }
+    });
+
+    let llamadaActual = null;
+
+    peer.on('open', (id) => {
+        document.getElementById('my-id-display').innerText = id;
+        document.getElementById('status-text').innerText = "Listo para marcar o recibir";
+    });
+
+    peer.on('error', (err) => {
+        if (err.type === 'unavailable-id') {
+            miNumero10 = generar10Digitos();
+            localStorage.setItem('mi_numero_10_alo', miNumero10);
+            location.reload();
+        } else {
+            document.getElementById('status-text').innerText = "Estado: " + err.type;
+        }
+    });
+
+    function pressKey(val) {
+        const display = document.getElementById('number-display');
+        if (display.value.length < 10) {
+            display.value += val;
+        }
+    }
+
+    document.getElementById('btn-backspace').addEventListener('click', () => {
+        const display = document.getElementById('number-display');
+        display.value = display.value.slice(0, -1);
+    });
+
+    peer.on('call', async (incomingCall) => {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+            if (confirm("¡Llamada entrante de voz! ¿Deseas contestar?")) {
+                incomingCall.answer(stream);
+                configurarLlamadaActiva(incomingCall);
+            } else {
+                incomingCall.close();
+            }
+        } catch (err) {
+            incomingCall.answer();
+            configurarLlamadaActiva(incomingCall);
+        }
+    });
+
+    document.getElementById('btn-call').addEventListener('click', async () => {
+        const destino = document.getElementById('number-display').value.trim();
+        if (destino.length !== 10) {
+            return alert("El número de destino debe tener exactamente 10 dígitos.");
+        }
+
+        document.getElementById('status-text').innerText = "Marcando a " + destino + "...";
+
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+            const call = peer.call(destino, stream);
+            if (!call) {
+                alert("No se pudo conectar con el número.");
+                return;
+            }
+            configurarLlamadaActiva(call);
+        } catch (err) {
+            const callFallback = peer.call(destino);
+            if (callFallback) {
+                configurarLlamadaActiva(callFallback);
+            } else {
+                alert("Error al intentar llamar. Verifica tu conexión Wi-Fi.");
+                document.getElementById('status-text').innerText = "Listo para marcar o recibir";
+            }
+        }
+    });
+
+    function configurarLlamadaActiva(call) {
+        llamadaActual = call;
+        document.getElementById('status-text').innerText = "📞 En llamada de voz activa";
+
+        call.on('stream', (remoteStream) => {
+            const audioEl = document.getElementById('remote-audio');
+            audioEl.srcObject = remoteStream;
+            audioEl.play().catch(e => console.log(e));
+        });
+
+        call.on('close', () => resetearInterfaz());
+        call.on('error', () => resetearInterfaz());
+    }
+
+    document.getElementById('btn-hang').addEventListener('click', () => {
+        if (llamadaActual) {
+            llamadaActual.close();
+        }
+        resetearInterfaz();
+    });
+
+    function resetearInterfaz() {
+        llamadaActual = null;
+        document.getElementById('status-text').innerText = "Llamada finalizada.";
+    }
+</script>
+
+</body>
+</html>
